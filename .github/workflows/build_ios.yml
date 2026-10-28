@@ -1,0 +1,75 @@
+name: Build iOS IPA & Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-ios:
+    name: Build iOS (.ipa)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        working-directory: mobile_app
+        run: flutter pub get
+
+      - name: Build iOS (No codesign for distribution / AltStore / Sideloadly)
+        working-directory: mobile_app
+        run: flutter build ios --release --no-codesign
+
+      - name: Package IPA
+        working-directory: mobile_app
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r Gestion_Cours_de_Soutien.ipa Payload
+          rm -rf Payload
+
+      - name: Upload iOS IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gestion_Cours_de_Soutien-iOS-IPA
+          path: mobile_app/Gestion_Cours_de_Soutien.ipa
+
+  build-android:
+    name: Build Android (.apk)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        working-directory: mobile_app
+        run: flutter pub get
+
+      - name: Build APK
+        working-directory: mobile_app
+        run: flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gestion_Cours_de_Soutien-Android-APK
+          path: mobile_app/build/app/outputs/flutter-apk/app-release.apk

@@ -1,0 +1,49 @@
+# Fichiers volumineux & binaires
+*.apk
+*.aab
+*.ipa
+*.zip
+*.tar.gz
+
+# Backend Node.js
+backend/node_modules/
+backend/.env
+backend/npm-debug.log*
+
+# Flutter & Dart
+mobile_app/build/
+mobile_app/.dart_tool/
+mobile_app/.flutter-plugins
+mobile_app/.flutter-plugins-dependencies
+mobile_app/.packages
+mobile_app/.pub/
+mobile_app/.pub-cache/
+mobile_app/lib/generated_plugin_registrant.dart
+
+# Android native
+mobile_app/android/.gradle/
+mobile_app/android/local.properties
+mobile_app/android/**/build/
+mobile_app/android/app/build/
+mobile_app/android/captures/
+mobile_app/android/.cxx/
+
+# iOS native
+mobile_app/ios/Pods/
+mobile_app/ios/.symlinks/
+mobile_app/ios/Flutter/Flutter.framework
+mobile_app/ios/Flutter/Flutter.podspec
+mobile_app/ios/Flutter/Generated.xcconfig
+mobile_app/ios/Flutter/app.flx
+mobile_app/ios/Flutter/app.zip
+mobile_app/ios/Flutter/flutter_assets/
+mobile_app/ios/ServiceDefinitions.json
+
+# IDE & Outils
+.agent/
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+Thumbs.db
+.DS_Store
