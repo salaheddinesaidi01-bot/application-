@@ -528,8 +528,11 @@ app.post('/api/seances/payer-masse', async (req, res) => {
        SET statut_paiement = 'Payé',
            mode_paiement = 'Espèces',
            date_paiement = NOW(),
-           statut_seance = 'Réalisée'
+           statut_seance = CASE WHEN statut_seance = 'Planifiée' THEN 'Réalisée' ELSE statut_seance END
        WHERE id_seance = ANY($1::uuid[])
+         AND (statut_seance != 'Planifiée' 
+              OR date_seance < CURRENT_DATE 
+              OR (date_seance = CURRENT_DATE AND (heure IS NULL OR heure = '' OR heure <= TO_CHAR(CURRENT_TIMESTAMP, 'HH24:MI'))))
        RETURNING *`,
       [ids]
     );
@@ -1244,8 +1247,12 @@ app.post('/api/groupes/:id/encaisser', async (req, res) => {
       UPDATE seances
       SET statut_paiement = 'Payé',
           date_paiement = CURRENT_TIMESTAMP,
-          mode_paiement = $1
+          mode_paiement = $1,
+          statut_seance = CASE WHEN statut_seance = 'Planifiée' THEN 'Réalisée' ELSE statut_seance END
       WHERE id_groupe = $2 AND statut_paiement = 'Impayé' AND statut_seance != 'Annulée'
+        AND (statut_seance != 'Planifiée' 
+             OR date_seance < CURRENT_DATE 
+             OR (date_seance = CURRENT_DATE AND (heure IS NULL OR heure = '' OR heure <= TO_CHAR(CURRENT_TIMESTAMP, 'HH24:MI'))))
     `;
     const params = [mode_paiement, id];
 

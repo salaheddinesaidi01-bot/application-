@@ -1144,7 +1144,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildFloatingNavItem(0, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Accueil', isDark),
-                    _buildFloatingNavItem(1, Icons.people_outline, Icons.people_rounded, 'Élèves', isDark, emoji: '🧑‍🎓'),
+                    _buildFloatingNavItem(1, Icons.people_outline, Icons.people_rounded, 'Élèves', isDark),
                     _buildFloatingNavItem(2, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Finance', isDark),
                     _buildFloatingNavItem(3, Icons.note_alt_outlined, Icons.note_alt_rounded, 'Notes', isDark),
                   ],
@@ -1163,9 +1163,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     IconData unselectedIcon,
     IconData selectedIcon,
     String label,
-    bool isDark, {
-    String? emoji,
-  }) {
+    bool isDark,
+  ) {
     final isSelected = _currentTabIndex == index;
     if (isSelected) {
       return Container(
@@ -1184,10 +1183,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (emoji != null)
-              Text(emoji, style: const TextStyle(fontSize: 16))
-            else
-              Icon(selectedIcon, size: 18, color: const Color(0xFF0B0D1B)),
+            Icon(selectedIcon, size: 18, color: const Color(0xFF0B0D1B)),
             const SizedBox(width: 6),
             Text(
               label,
@@ -1211,13 +1207,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       borderRadius: BorderRadius.circular(24),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        child: emoji != null
-            ? Text(emoji, style: const TextStyle(fontSize: 18))
-            : Icon(
-                unselectedIcon,
-                size: 22,
-                color: isDark ? const Color(0xFF8E95B3) : const Color(0xFF5A6689),
-              ),
+        child: Icon(
+          unselectedIcon,
+          size: 22,
+          color: isDark ? const Color(0xFF8E95B3) : const Color(0xFF5A6689),
+        ),
       ),
     );
   }
@@ -1314,6 +1308,8 @@ class ItemSeanceJour {
   bool get estPaye => statutPaiementGlobal.toLowerCase() == 'payé' || statutPaiementGlobal.toLowerCase() == 'paye';
   Seance get premiereSeance => seances.first;
   bool get estArrivee => seances.any((s) => s.estArrivee);
+  bool get estPlanifiee => seances.any((s) => s.estPlanifiee);
+  bool get estPayable => seances.any((s) => s.estPayable);
   bool get necessiteAction => estArrivee && !estPaye;
 }
 
@@ -1375,6 +1371,8 @@ class ItemImpaye {
     );
   }
 
+  bool get estPlanifiee => seances.any((s) => s.estPlanifiee);
+  bool get estArrivee => seances.isEmpty || seances.any((s) => s.estArrivee);
   bool get estPayable => seances.any((s) => s.estPayable);
   int get totalMontant => montantTotal;
   int get joursRetardMax => maxRetard;
@@ -1387,6 +1385,30 @@ Future<void> afficherDialoguePointageGroupe({
   required ItemImpaye item,
   required VoidCallback onComplete,
 }) async {
+  if (!item.estPayable) {
+    if (context.mounted) {
+      final dateStr = DateFormat('dd/MM/yyyy').format(DateTime.tryParse(item.dateSeance) ?? DateTime.now());
+      final heureStr = item.heure != null && item.heure!.isNotEmpty ? " à ${item.heure}" : "";
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFFD97706),
+          content: Row(
+            children: [
+              const Icon(Icons.lock_clock_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Séance planifiée à venir ($dateStr$heureStr) : le pointage et l\'encaissement sont bloqués jusqu\'à l\'heure de la séance.',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return;
+  }
+
   final theme = Theme.of(context);
   final isDark = theme.brightness == Brightness.dark;
 
@@ -2797,6 +2819,30 @@ class _AccueilTabState extends State<AccueilTab> {
   }
 
   Future<void> _validerPaiementSeanceIndividuelle(Seance seance) async {
+    if (!seance.estPayable) {
+      if (mounted) {
+        final dateStr = DateFormat('dd/MM/yyyy').format(DateTime.tryParse(seance.dateSeance) ?? DateTime.now());
+        final heureStr = seance.heure != null && seance.heure!.isNotEmpty ? " à ${seance.heure}" : "";
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFFD97706),
+            content: Row(
+              children: [
+                const Icon(Icons.lock_clock_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Séance planifiée à venir ($dateStr$heureStr) : l\'encaissement est bloqué jusqu\'à l\'heure de la séance.',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     final confirme = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -3159,11 +3205,57 @@ class _AccueilTabState extends State<AccueilTab> {
         dense: true,
         onTap: () {
           if (item.isGroupe) {
+            if (!item.estArrivee) {
+              final dateStr = DateFormat('dd/MM/yyyy').format(DateTime.tryParse(item.dateSeance) ?? DateTime.now());
+              final heureStr = item.heure != null && item.heure!.isNotEmpty ? " à ${item.heure}" : "";
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: const Color(0xFFD97706),
+                  content: Row(
+                    children: [
+                      const Icon(Icons.lock_clock_rounded, color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Séance planifiée à venir ($dateStr$heureStr) : le pointage et l\'encaissement sont bloqués jusqu\'à l\'heure de la séance.',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+              return;
+            }
             afficherDialoguePointageGroupe(
               context: context,
               item: item.toItemImpaye(),
               onComplete: recharger,
             );
+          } else {
+            if (!item.premiereSeance.estPayable) {
+              final dateStr = DateFormat('dd/MM/yyyy').format(DateTime.tryParse(item.dateSeance) ?? DateTime.now());
+              final heureStr = item.heure != null && item.heure!.isNotEmpty ? " à ${item.heure}" : "";
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: const Color(0xFFD97706),
+                  content: Row(
+                    children: [
+                      const Icon(Icons.lock_clock_rounded, color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Séance planifiée à venir ($dateStr$heureStr) : l\'encaissement est bloqué jusqu\'à l\'heure de la séance.',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+              return;
+            }
+            if (!item.estPaye) {
+              _validerPaiementSeanceIndividuelle(item.premiereSeance);
+            }
           }
         },
         leading: Container(
@@ -4156,7 +4248,7 @@ class _AccueilTabState extends State<AccueilTab> {
                                     : Colors.transparent),
                             child: ListTile(
                               dense: true,
-                              onTap: () => _ouvrirDialoguePointageGroupe(item),
+                              onTap: item.estPayable ? () => _ouvrirDialoguePointageGroupe(item) : null,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               leading: Checkbox(
                                 value: isAllSelected ? true : (isSomeSelected ? null : false),
@@ -4164,15 +4256,17 @@ class _AccueilTabState extends State<AccueilTab> {
                                 activeColor: isDark ? const Color(0xFF2DD4BF) : const Color(0xFF061449),
                                 checkColor: isDark ? const Color(0xFF070B16) : Colors.white,
                                 side: isDark ? const BorderSide(color: Color(0x28FFFFFF), width: 1.2) : null,
-                                onChanged: (val) {
-                                  setState(() {
-                                    if (val == true) {
-                                      _impayesSelectionnes.addAll(allIds);
-                                    } else {
-                                      _impayesSelectionnes.removeAll(allIds);
-                                    }
-                                  });
-                                },
+                                onChanged: item.estPayable
+                                    ? (val) {
+                                        setState(() {
+                                          if (val == true) {
+                                            _impayesSelectionnes.addAll(allIds);
+                                          } else {
+                                            _impayesSelectionnes.removeAll(allIds);
+                                          }
+                                        });
+                                      }
+                                    : null,
                               ),
                               title: Row(
                                 children: [
@@ -4204,6 +4298,23 @@ class _AccueilTabState extends State<AccueilTab> {
                                       ),
                                     ),
                                   ),
+                                  if (!item.estPayable)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      margin: const EdgeInsets.only(left: 6),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0x28FFFFFF) : Colors.grey.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.lock_clock_rounded, size: 11, color: isDark ? const Color(0xFF94A3B8) : Colors.grey),
+                                          const SizedBox(width: 3),
+                                          Text('À venir', style: TextStyle(fontSize: 10, color: isDark ? const Color(0xFF94A3B8) : Colors.grey, fontWeight: FontWeight.w600)),
+                                        ],
+                                      ),
+                                    ),
                                   if (isAlerteRetard)
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -4268,17 +4379,19 @@ class _AccueilTabState extends State<AccueilTab> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   ElevatedButton.icon(
-                                    icon: const Icon(Icons.how_to_reg_rounded, size: 14),
-                                    label: const Text('Pointer', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    icon: Icon(item.estPayable ? Icons.how_to_reg_rounded : Icons.lock_clock_rounded, size: 14),
+                                    label: Text(item.estPayable ? 'Pointer' : 'À venir', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: isDark ? const Color(0xFF2DD4BF) : const Color(0xFF006A61),
                                       foregroundColor: isDark ? const Color(0xFF070B16) : Colors.white,
+                                      disabledBackgroundColor: isDark ? const Color(0xFF1E293B) : Colors.grey[300],
+                                      disabledForegroundColor: isDark ? const Color(0xFF64748B) : Colors.grey[600],
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                       visualDensity: VisualDensity.compact,
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
-                                    onPressed: () => _ouvrirDialoguePointageGroupe(item),
+                                    onPressed: item.estPayable ? () => _ouvrirDialoguePointageGroupe(item) : null,
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.cancel_outlined, color: isDark ? const Color(0xFFF87171) : const Color(0xFFBA1A1A), size: 20),
@@ -4311,15 +4424,17 @@ class _AccueilTabState extends State<AccueilTab> {
                               activeColor: isDark ? const Color(0xFF2DD4BF) : const Color(0xFF061449),
                               checkColor: isDark ? const Color(0xFF070B16) : Colors.white,
                               side: isDark ? const BorderSide(color: Color(0x28FFFFFF), width: 1.2) : null,
-                              onChanged: (val) {
-                                setState(() {
-                                  if (val == true) {
-                                    _impayesSelectionnes.add(s.idSeance);
-                                  } else {
-                                    _impayesSelectionnes.remove(s.idSeance);
-                                  }
-                                });
-                              },
+                              onChanged: s.estPayable
+                                  ? (val) {
+                                      setState(() {
+                                        if (val == true) {
+                                          _impayesSelectionnes.add(s.idSeance);
+                                        } else {
+                                          _impayesSelectionnes.remove(s.idSeance);
+                                        }
+                                      });
+                                    }
+                                  : null,
                             ),
                             title: Row(
                               children: [
@@ -6213,28 +6328,38 @@ class _FinanceTabState extends State<FinanceTab> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isCritique
-                                  ? const Color(0xFFEF4444).withValues(alpha: 0.12)
-                                  : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                              color: !isPayable
+                                  ? (isDark ? const Color(0x28FFFFFF) : Colors.grey.withValues(alpha: 0.15))
+                                  : (isCritique
+                                      ? const Color(0xFFEF4444).withValues(alpha: 0.12)
+                                      : const Color(0xFFF59E0B).withValues(alpha: 0.12)),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  isCritique ? Icons.error_rounded : Icons.schedule_rounded,
+                                  !isPayable
+                                      ? Icons.lock_clock_rounded
+                                      : (isCritique ? Icons.error_rounded : Icons.schedule_rounded),
                                   size: 13,
-                                  color: isCritique ? const Color(0xFFEF4444) : const Color(0xFFD97706),
+                                  color: !isPayable
+                                      ? (isDark ? const Color(0xFF94A3B8) : Colors.grey[700])
+                                      : (isCritique ? const Color(0xFFEF4444) : const Color(0xFFD97706)),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  isCritique
-                                      ? '🔴 En retard ($retardMax j)'
-                                      : '⏳ Non payé ($retardMax j)',
+                                  !isPayable
+                                      ? '🔒 Séance à venir'
+                                      : (isCritique
+                                          ? '🔴 En retard ($retardMax j)'
+                                          : '⏳ Non payé ($retardMax j)'),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: isCritique ? const Color(0xFFEF4444) : const Color(0xFFD97706),
+                                    color: !isPayable
+                                        ? (isDark ? const Color(0xFF94A3B8) : Colors.grey[700])
+                                        : (isCritique ? const Color(0xFFEF4444) : const Color(0xFFD97706)),
                                   ),
                                 ),
                               ],
@@ -6242,18 +6367,20 @@ class _FinanceTabState extends State<FinanceTab> {
                           ),
                           const Spacer(),
                           ElevatedButton.icon(
-                            onPressed: () => _ouvrirDialoguePointageGroupe(item),
+                            onPressed: isPayable ? () => _ouvrirDialoguePointageGroupe(item) : null,
                             icon: Icon(
                               isPayable ? Icons.how_to_reg_rounded : Icons.lock_clock_rounded,
                               size: 15,
                             ),
                             label: Text(
-                              isPayable ? 'Pointer / Encaisser' : 'À venir (Verrouillé)',
+                              isPayable ? 'Pointer / Encaisser' : 'À venir',
                               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isPayable ? const Color(0xFF006A61) : (isDark ? const Color(0xFF334155) : Colors.grey[400]),
+                              backgroundColor: const Color(0xFF006A61),
                               foregroundColor: Colors.white,
+                              disabledBackgroundColor: isDark ? const Color(0xFF1E293B) : Colors.grey[300],
+                              disabledForegroundColor: isDark ? const Color(0xFF64748B) : Colors.grey[600],
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
@@ -6337,28 +6464,38 @@ class _FinanceTabState extends State<FinanceTab> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isCritique
-                                ? const Color(0xFFEF4444).withValues(alpha: 0.12)
-                                : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                            color: !s.estPayable
+                                ? (isDark ? const Color(0x28FFFFFF) : Colors.grey.withValues(alpha: 0.15))
+                                : (isCritique
+                                    ? const Color(0xFFEF4444).withValues(alpha: 0.12)
+                                    : const Color(0xFFF59E0B).withValues(alpha: 0.12)),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                isCritique ? Icons.error_rounded : Icons.schedule_rounded,
+                                !s.estPayable
+                                    ? Icons.lock_clock_rounded
+                                    : (isCritique ? Icons.error_rounded : Icons.schedule_rounded),
                                 size: 13,
-                                color: isCritique ? const Color(0xFFEF4444) : const Color(0xFFD97706),
+                                color: !s.estPayable
+                                    ? (isDark ? const Color(0xFF94A3B8) : Colors.grey[700])
+                                    : (isCritique ? const Color(0xFFEF4444) : const Color(0xFFD97706)),
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                isCritique
-                                    ? '🔴 En retard de $retard jours'
-                                    : '⏳ Non payé ($retard j)',
+                                !s.estPayable
+                                    ? '🔒 Séance à venir'
+                                    : (isCritique
+                                        ? '🔴 En retard de $retard jours'
+                                        : '⏳ Non payé ($retard j)'),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: isCritique ? const Color(0xFFEF4444) : const Color(0xFFD97706),
+                                  color: !s.estPayable
+                                      ? (isDark ? const Color(0xFF94A3B8) : Colors.grey[700])
+                                      : (isCritique ? const Color(0xFFEF4444) : const Color(0xFFD97706)),
                                 ),
                               ),
                             ],
