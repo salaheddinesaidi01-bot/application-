@@ -387,7 +387,7 @@ class _HistoriquePaiementsScreenState extends State<HistoriquePaiementsScreen>
                       child: Text(
                         (p.nomGroupe != null && p.nomGroupe!.trim().isNotEmpty)
                             ? '👥 ${p.nomGroupe}'
-                            : (p.typeSeance == 'Privée' ? '👤 Séance privée' : '👤 Séance individuelle'),
+                            : (p.typeSeance == 'Privée' ? '🧑‍🎓 Séance privée' : '🧑‍🎓 Séance individuelle'),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,

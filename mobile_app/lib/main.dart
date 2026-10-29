@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -302,6 +303,136 @@ class _AppEntryPointState extends State<AppEntryPoint> {
       return const LandingScreen();
     }
     return const MainNavigationScreen();
+  }
+}
+
+// ==========================================
+// FOND AVEC EFFET FLOU (AMBIENT ORBS + BLUR)
+// ==========================================
+class AppBlurredBackground extends StatelessWidget {
+  final Widget child;
+  final bool isDark;
+
+  const AppBlurredBackground({
+    super.key,
+    required this.child,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // Fond de base
+        Positioned.fill(
+          child: Container(
+            color: isDark ? const Color(0xFF0B1120) : const Color(0xFFF1F5F9),
+          ),
+        ),
+        // Orbes lumineux colorés d'ambiance
+        Positioned(
+          top: -60,
+          left: -40,
+          child: Container(
+            width: 320,
+            height: 320,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: isDark
+                    ? [
+                        const Color(0xFF0D9488).withValues(alpha: 0.35),
+                        Colors.transparent,
+                      ]
+                    : [
+                        const Color(0xFF14B8A6).withValues(alpha: 0.28),
+                        Colors.transparent,
+                      ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 160,
+          right: -60,
+          child: Container(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: isDark
+                    ? [
+                        const Color(0xFF6366F1).withValues(alpha: 0.30),
+                        Colors.transparent,
+                      ]
+                    : [
+                        const Color(0xFF818CF8).withValues(alpha: 0.25),
+                        Colors.transparent,
+                      ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 120,
+          left: -60,
+          child: Container(
+            width: 340,
+            height: 340,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: isDark
+                    ? [
+                        const Color(0xFF0284C7).withValues(alpha: 0.25),
+                        Colors.transparent,
+                      ]
+                    : [
+                        const Color(0xFF38BDF8).withValues(alpha: 0.22),
+                        Colors.transparent,
+                      ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -40,
+          right: -30,
+          child: Container(
+            width: 280,
+            height: 280,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: isDark
+                    ? [
+                        const Color(0xFF10B981).withValues(alpha: 0.28),
+                        Colors.transparent,
+                      ]
+                    : [
+                        const Color(0xFF34D399).withValues(alpha: 0.24),
+                        Colors.transparent,
+                      ],
+              ),
+            ),
+          ),
+        ),
+        // Filtre flou givré (BackdropFilter blur)
+        Positioned.fill(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+            child: Container(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.15),
+            ),
+          ),
+        ),
+        // Contenu
+        Positioned.fill(child: child),
+      ],
+    );
   }
 }
 
@@ -840,8 +971,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   Widget build(BuildContext context) {
     final isDark = AppRoot.of(context).isDarkMode;
 
-    return Scaffold(
-      drawer: AppDrawer(
+    return AppBlurredBackground(
+      isDark: isDark,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        drawer: AppDrawer(
         currentTabIndex: _currentTabIndex,
         profProfile: _profProfile,
         notifSummary: _notifSummary,
@@ -881,6 +1015,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         },
       ),
       appBar: AppBar(
+        backgroundColor: (isDark ? const Color(0xFF0B1120) : Colors.white).withValues(alpha: 0.80),
+        elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(color: Colors.transparent),
+          ),
+        ),
         leading: Builder(
           builder: (ctx) => IconButton(
             tooltip: 'Menu latéral',
@@ -977,43 +1119,53 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         child: Container(
           height: 60,
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F172E).withValues(alpha: 0.94) : Colors.white.withValues(alpha: 0.94),
+          child: ClipRRect(
             borderRadius: BorderRadius.circular(36),
-            border: Border.all(
-              color: isDark ? const Color(0x33FFFFFF) : const Color(0xFFE5EEFF),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: (isDark ? const Color(0xFF0F172E) : Colors.white).withValues(alpha: 0.80),
+                  borderRadius: BorderRadius.circular(36),
+                  border: Border.all(
+                    color: isDark ? const Color(0x33FFFFFF) : const Color(0xFFE5EEFF),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildFloatingNavItem(0, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Accueil', isDark),
+                    _buildFloatingNavItem(1, Icons.people_outline, Icons.people_rounded, 'Élèves', isDark, emoji: '🧑‍🎓'),
+                    _buildFloatingNavItem(2, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Finance', isDark),
+                    _buildFloatingNavItem(3, Icons.note_alt_outlined, Icons.note_alt_rounded, 'Notes', isDark),
+                  ],
+                ),
               ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildFloatingNavItem(0, Icons.dashboard_outlined, Icons.dashboard_rounded, 'Accueil', isDark),
-              _buildFloatingNavItem(1, Icons.people_outline, Icons.people_rounded, 'Élèves', isDark),
-              _buildFloatingNavItem(2, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet_rounded, 'Finance', isDark),
-              _buildFloatingNavItem(3, Icons.note_alt_outlined, Icons.note_alt_rounded, 'Notes', isDark),
-            ],
+            ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFloatingNavItem(
     int index,
     IconData unselectedIcon,
     IconData selectedIcon,
     String label,
-    bool isDark,
-  ) {
+    bool isDark, {
+    String? emoji,
+  }) {
     final isSelected = _currentTabIndex == index;
     if (isSelected) {
       return Container(
@@ -1032,7 +1184,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(selectedIcon, size: 18, color: const Color(0xFF0B0D1B)),
+            if (emoji != null)
+              Text(emoji, style: const TextStyle(fontSize: 16))
+            else
+              Icon(selectedIcon, size: 18, color: const Color(0xFF0B0D1B)),
             const SizedBox(width: 6),
             Text(
               label,
@@ -1056,11 +1211,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       borderRadius: BorderRadius.circular(24),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        child: Icon(
-          unselectedIcon,
-          size: 22,
-          color: isDark ? const Color(0xFF8E95B3) : const Color(0xFF5A6689),
-        ),
+        child: emoji != null
+            ? Text(emoji, style: const TextStyle(fontSize: 18))
+            : Icon(
+                unselectedIcon,
+                size: 22,
+                color: isDark ? const Color(0xFF8E95B3) : const Color(0xFF5A6689),
+              ),
       ),
     );
   }
@@ -2258,9 +2415,9 @@ class _AccueilTabState extends State<AccueilTab> {
                       color: isDark ? const Color(0xFF334155) : const Color(0xFF061449).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.person_rounded, color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF061449)),
+                    child: const Text('🧑‍🎓', style: TextStyle(fontSize: 22)),
                   ),
-                  title: const Text('Séance Individuelle', style: TextStyle(fontWeight: FontWeight.bold)),
+                  title: const Text('Séance Individuelle 🧑‍🎓', style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('Cours pour un seul élève particulier', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : null)),
                   trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: isDark ? const Color(0xFF94A3B8) : null),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -2274,9 +2431,9 @@ class _AccueilTabState extends State<AccueilTab> {
                       color: isDark ? const Color(0xFF334155) : const Color(0xFF006A61).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.groups_rounded, color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF006A61)),
+                    child: const Text('👥', style: TextStyle(fontSize: 22)),
                   ),
-                  title: const Text('Séance de Groupe', style: TextStyle(fontWeight: FontWeight.bold)),
+                  title: const Text('Séance de Groupe 👥', style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('Pointage des présences et tarif partagé par groupe', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : null)),
                   trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: isDark ? const Color(0xFF94A3B8) : null),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -2686,7 +2843,7 @@ class _AccueilTabState extends State<AccueilTab> {
     final titreStr = item.titre;
     final sousTitreStr = item.isGroupe
         ? '👥 ${item.sousTitre}'
-        : (item.sousTitre ?? 'Séance individuelle');
+        : '🧑‍🎓 ${item.sousTitre ?? 'Séance individuelle'}';
 
     // Palette visuelle adaptée au statut
     final List<Color> gradientColors = isPaye
@@ -3082,7 +3239,7 @@ class _AccueilTabState extends State<AccueilTab> {
           ],
         ),
         subtitle: Text(
-          '${item.isGroupe ? "👥 ${item.sousTitre}" : (item.sousTitre ?? "👤 Séance individuelle")} • ${NumberFormat('#,###').format(item.montantTotal)} DZD',
+          '${item.isGroupe ? "👥 ${item.sousTitre}" : "🧑‍🎓 ${item.sousTitre ?? 'Séance individuelle'}"} • ${NumberFormat('#,###').format(item.montantTotal)} DZD',
           style: TextStyle(
             fontSize: 12,
             color: isDark ? const Color(0xFF94A3B8) : Colors.grey[600],
@@ -4230,7 +4387,7 @@ class _AccueilTabState extends State<AccueilTab> {
                               ],
                             ),
                             subtitle: Text(
-                              '$dateStr${s.heure != null && s.heure!.isNotEmpty ? " • ${s.heure}" : ""} • ${(s.nomGroupe != null && s.nomGroupe!.isNotEmpty) ? "👥 ${s.nomGroupe}" : (s.typeSeance == "Privée" ? "👤 Privée" : "👤 Individuelle")} • ${NumberFormat('#,###').format(s.montant)} DZD',
+                              '$dateStr${s.heure != null && s.heure!.isNotEmpty ? " • ${s.heure}" : ""} • ${(s.nomGroupe != null && s.nomGroupe!.isNotEmpty) ? "👥 ${s.nomGroupe}" : (s.typeSeance == "Privée" ? "🧑‍🎓 Privée" : "🧑‍🎓 Individuelle")} • ${NumberFormat('#,###').format(s.montant)} DZD',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: isDark ? const Color(0xFF94A3B8) : null,
@@ -4454,6 +4611,7 @@ class _ElevesTabState extends State<ElevesTab> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _ajouterEleve,
         backgroundColor: isDark ? const Color(0xFF2CE5A7) : const Color(0xFF061449),
@@ -4470,11 +4628,11 @@ class _ElevesTabState extends State<ElevesTab> {
           // Commutateur Élèves / Groupes
           Container(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-            color: isDark ? const Color(0xFF0B0D1B) : Colors.white,
+            color: Colors.transparent,
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF16192E) : const Color(0xFFEFF4FF),
+                color: isDark ? const Color(0xFF16192E).withValues(alpha: 0.7) : const Color(0xFFEFF4FF).withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isDark ? const Color(0xFF252A4A) : const Color(0xFFE5EEFF),
@@ -4505,15 +4663,22 @@ class _ElevesTabState extends State<ElevesTab> {
                               : null,
                         ),
                         child: Center(
-                          child: Text(
-                            'Élèves (${_eleves.length})',
-                            style: TextStyle(
-                              fontWeight: _selectedSubTab == 0 ? FontWeight.bold : FontWeight.w600,
-                              fontSize: 13,
-                              color: _selectedSubTab == 0
-                                  ? (isDark ? const Color(0xFF0B0D1B) : const Color(0xFF061449))
-                                  : (isDark ? const Color(0xFF8E95B3) : const Color(0xFF5A6689)),
-                            ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('🧑‍🎓', style: TextStyle(fontSize: 14)),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Élèves (${_eleves.length})',
+                                style: TextStyle(
+                                  fontWeight: _selectedSubTab == 0 ? FontWeight.bold : FontWeight.w600,
+                                  fontSize: 13,
+                                  color: _selectedSubTab == 0
+                                      ? (isDark ? const Color(0xFF0B0D1B) : const Color(0xFF061449))
+                                      : (isDark ? const Color(0xFF8E95B3) : const Color(0xFF5A6689)),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -4544,13 +4709,7 @@ class _ElevesTabState extends State<ElevesTab> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.groups_rounded,
-                                size: 16,
-                                color: _selectedSubTab == 1
-                                    ? (isDark ? const Color(0xFF0B0D1B) : const Color(0xFF061449))
-                                    : (isDark ? const Color(0xFF8E95B3) : const Color(0xFF5A6689)),
-                              ),
+                              const Text('👥', style: TextStyle(fontSize: 14)),
                               const SizedBox(width: 6),
                               Text(
                                 'Groupes',
@@ -4780,23 +4939,46 @@ class _ElevesTabState extends State<ElevesTab> {
                                         padding: const EdgeInsets.all(14.0),
                                         child: Row(
                                           children: [
-                                            // Avatar avec coins arrondis pastel (Photo 3)
-                                            Container(
-                                              width: 46,
-                                              height: 46,
-                                              decoration: BoxDecoration(
-                                                color: isActif ? cardAccentColor : Colors.grey.withValues(alpha: 0.3),
-                                                borderRadius: BorderRadius.circular(13),
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: Text(
-                                                e.nom.isNotEmpty ? e.nom[0].toUpperCase() : '?',
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w900,
-                                                  fontSize: 18,
-                                                  color: Color(0xFF0B0D1B),
+                                            // Avatar avec coins arrondis pastel et badge élève 🧑‍🎓
+                                            Stack(
+                                              clipBehavior: Clip.none,
+                                              children: [
+                                                Container(
+                                                  width: 46,
+                                                  height: 46,
+                                                  decoration: BoxDecoration(
+                                                    color: isActif ? cardAccentColor : Colors.grey.withValues(alpha: 0.3),
+                                                    borderRadius: BorderRadius.circular(13),
+                                                  ),
+                                                  alignment: Alignment.center,
+                                                  child: Text(
+                                                    e.nom.isNotEmpty ? e.nom[0].toUpperCase() : '?',
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight.w900,
+                                                      fontSize: 18,
+                                                      color: Color(0xFF0B0D1B),
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
+                                                Positioned(
+                                                  right: -3,
+                                                  bottom: -3,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.all(1.5),
+                                                    decoration: BoxDecoration(
+                                                      color: isDark ? const Color(0xFF16192E) : Colors.white,
+                                                      shape: BoxShape.circle,
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: Colors.black.withValues(alpha: 0.15),
+                                                          blurRadius: 3,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    child: const Text('🧑‍🎓', style: TextStyle(fontSize: 11)),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                             const SizedBox(width: 14),
 
@@ -5241,6 +5423,7 @@ class _FinanceTabState extends State<FinanceTab> {
     final countRetard3j = _seancesImpayees.where((s) => s.joursRetard >= 3).length;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: RefreshIndicator(
         onRefresh: recharger,
         color: const Color(0xFF006A61),
@@ -5807,7 +5990,7 @@ class _FinanceTabState extends State<FinanceTab> {
                     ],
                   ),
                   subtitle: Text(
-                    'Séance : $dateSeanceStr (${(s.nomGroupe != null && s.nomGroupe!.isNotEmpty) ? "👥 ${s.nomGroupe}" : (s.typeSeance == "Privée" ? "👤 Privée" : "👤 Individuelle")}) • Encaissé le : $datePaiementStr',
+                    'Séance : $dateSeanceStr (${(s.nomGroupe != null && s.nomGroupe!.isNotEmpty) ? "👥 ${s.nomGroupe}" : (s.typeSeance == "Privée" ? "🧑‍🎓 Privée" : "🧑‍🎓 Individuelle")}) • Encaissé le : $datePaiementStr',
                     style: TextStyle(fontSize: 11, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF5A6689)),
                   ),
                 );
@@ -6145,7 +6328,7 @@ class _FinanceTabState extends State<FinanceTab> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Séance : $dateSeanceStr (${(s.nomGroupe != null && s.nomGroupe!.isNotEmpty) ? "👥 ${s.nomGroupe}" : (s.typeSeance == "Privée" ? "👤 Privée" : "👤 Individuelle")})${s.heure != null ? " • ${s.heure}" : ""}',
+                      'Séance : $dateSeanceStr (${(s.nomGroupe != null && s.nomGroupe!.isNotEmpty) ? "👥 ${s.nomGroupe}" : (s.typeSeance == "Privée" ? "🧑‍🎓 Privée" : "🧑‍🎓 Individuelle")})${s.heure != null ? " • ${s.heure}" : ""}',
                       style: TextStyle(fontSize: 12, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                     ),
                     const SizedBox(height: 10),

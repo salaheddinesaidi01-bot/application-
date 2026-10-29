@@ -386,8 +386,8 @@ class _AppDrawerState extends State<AppDrawer>
                   // 2. Élèves
                   _buildAnimatedItem(
                     index: 1,
-                    icon: Icons.people_alt_rounded,
-                    title: 'Répertoire Élèves',
+                    icon: Icons.school_rounded,
+                    title: 'Répertoire Élèves 🧑‍🎓',
                     subtitle: 'Fiches, coordonnées & niveaux',
                     isSelected: widget.currentTabIndex == 1,
                     onTap: () => widget.onSelectTab(1),
